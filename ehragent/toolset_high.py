@@ -14,6 +14,11 @@ def run_code(cell):
     # import prompts
     from prompts_mimic import CodeHeader
     try:
+        # Add parent directory to sys.path to ensure tools module can be imported
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+        
         global_var = {"answer": 0}
         exec(CodeHeader+cell, global_var)
         cell = "\n".join([line for line in cell.split("\n") if line.strip() and not line.strip().startswith("#")])

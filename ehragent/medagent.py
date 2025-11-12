@@ -1,10 +1,8 @@
 import time
 from typing import Dict, List, Optional, Union, Callable, Literal, Optional, Union
 import logging
-import asyncio
-import openai
 import json
-from openai import OpenAI, AzureOpenAI
+from openai import OpenAI
 from autogen.agentchat import Agent, UserProxyAgent, ConversableAgent
 from termcolor import colored
 import Levenshtein
@@ -49,32 +47,20 @@ class MedAgent(UserProxyAgent):
             from prompts_eicu import RetrKnowledge
         # Returns the related information to the given query.
         patience = 2
-        sleep_time = 30
-        openai.api_type = config["api_type"]
-        openai.api_base = config["base_url"]
-        openai.api_version = config["api_version"]
-        openai.api_key = config["api_key"]
+        sleep_time = 10
         engine = config["model"]
         query_message = RetrKnowledge.format(question=query)
         messages = [{"role":"system","content":"You are an AI assistant that helps people find information."},
                     {"role":"user","content": query_message}]
-        client = AzureOpenAI(
-            api_key=config["api_key"],
-            azure_endpoint=config["base_url"],
-            api_version=config["api_version"],
-        )
+        client = OpenAI(api_key=config["api_key"])
         while patience > 0:
             patience -= 1
             try:
                 response = client.chat.completions.create(
                     model=engine,
                     messages = messages,
-                    temperature=0,
-                    max_tokens=800,
-                    top_p=0.95,
-                    frequency_penalty=0,
-                    presence_penalty=0,
-                    stop=None)
+                    max_completion_tokens=800
+                    )
                 prediction = response.choices[0].message.content.strip()
                 if prediction != "" and prediction != None:
                     return prediction
@@ -83,6 +69,24 @@ class MedAgent(UserProxyAgent):
                 if sleep_time > 0:
                     time.sleep(sleep_time)
         return "Fail to retrieve related knowledge, please try again later."
+
+    def get_top_k_memory_indices(self, query, memory_bank, k):
+        levenshtein_dist = {}
+        for i in range(len(memory_bank)):
+            question = memory_bank[i]["question"]
+            levenshtein_dist[i] = Levenshtein.distance(query, question)
+        levenshtein_dist_sorted = sorted(levenshtein_dist.items(), key=lambda x: x[1], reverse=False)
+        selected_indexes = [levenshtein_dist_sorted[i][0] for i in range(min(k, len(levenshtein_dist_sorted)))]
+        return selected_indexes
+
+    def get_all_memory_indices_sorted(self, query, memory_bank):
+        levenshtein_dist = {}
+        for i in range(len(memory_bank)):
+            question = memory_bank[i]["question"]
+            levenshtein_dist[i] = Levenshtein.distance(query, question)
+        levenshtein_dist_sorted = sorted(levenshtein_dist.items(), key=lambda x: x[1], reverse=False)
+        all_indexes = [levenshtein_dist_sorted[i][0] for i in range(len(levenshtein_dist_sorted))]
+        return all_indexes
 
     def retrieve_examples(self, query):
         levenshtein_dist = {}
@@ -112,9 +116,9 @@ class MedAgent(UserProxyAgent):
 
         init_message = EHRAgent_Message_Prompt.format(examples=examples, knowledge=knowledge, question=context["message"])
         return init_message
-    
+
     def send(self, message: Union[Dict, str], recipient: Agent, request_reply: Optional[bool]=None, silent: Optional[bool]=False):
-        valid = self._append_oai_message(message, "assistant", recipient)
+        valid = self._append_oai_message(message, "assistant", recipient, is_sending=True)
         if valid:
             recipient.receive(message, self, request_reply, silent)
         else:
@@ -148,32 +152,20 @@ class MedAgent(UserProxyAgent):
             from prompts_eicu import CodeDebugger
         # Returns the related information to the given query.
         patience = 2
-        sleep_time = 30
-        openai.api_type = config["api_type"]
-        openai.api_base = config["base_url"]
-        openai.api_version = config["api_version"]
-        openai.api_key = config["api_key"]
+        sleep_time = 10
         engine = config["model"]
         query_message = CodeDebugger.format(question=self.question, code=code, error_info=error_info)
         messages = [{"role":"system","content":"You are an AI assistant that helps people debug their code. Only list one most possible reason to the errors."},
                     {"role":"user","content": query_message}]
-        client = AzureOpenAI(
-            api_key=config["api_key"],
-            azure_endpoint=config["base_url"],
-            api_version=config["api_version"],
-        )
+        client = OpenAI(api_key=config["api_key"])
         while patience > 0:
             patience -= 1
             try:
                 response = client.chat.completions.create(
                     model=engine,
                     messages = messages,
-                    temperature=0,
-                    max_tokens=800,
-                    top_p=0.95,
-                    frequency_penalty=0,
-                    presence_penalty=0,
-                    stop=None)
+                    max_completion_tokens=800
+                    )
                 prediction = response.choices[0].message.content.strip()
                 if prediction != "" and prediction != None:
                     return prediction

@@ -1,0 +1,7 @@
+.env
+.cache
+.vscode
+logs
+coding
+**/__pycache__/
+data

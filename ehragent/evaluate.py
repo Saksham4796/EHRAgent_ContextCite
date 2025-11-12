@@ -1,5 +1,8 @@
 import os
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def judge(pred, ans):
     old_flag = True
@@ -28,11 +31,12 @@ def judge(pred, ans):
             break
     return (old_flag or new_flag)
 
-logs_path = "<YOUR_LOGS_PATH>"
+logs_path = os.path.join(os.getenv("LOGS_PATH"), os.getenv("NUM_SHOTS"))
 files = os.listdir(logs_path)
 
+print(files)
 # read the files 
-answer_book = "<YOUR_DATASET_PATH>"
+answer_book = f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/valid_preprocessed.json"
 with open(answer_book, 'r') as f:
     contents = json.load(f)
 answers = {}
@@ -44,7 +48,7 @@ stats = {"total_num": 0, "correct": 0, "unfinished": 0, "incorrect": 0}
 for file in files:
     if not file.split('.')[0] in answers.keys():
         continue
-    with open(logs_path+file, 'r') as f:
+    with open(os.path.join(logs_path, file), 'r') as f:
         logs = f.read()
     split_logs = logs.split('\n----------------------------------------------------------\n')
     question = split_logs[0]

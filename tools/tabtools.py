@@ -5,24 +5,29 @@ import re
 import sqlite3
 import sys
 import Levenshtein
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
+
 def db_loader(target_ehr):
-    ehr_dict = {"admissions":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/ADMISSIONS.csv",
-                "chartevents":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/CHARTEVENTS.csv",
-                "cost":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/COST.csv",
-                "d_icd_diagnoses":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/D_ICD_DIAGNOSES.csv",
-                "d_icd_procedures":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/D_ICD_PROCEDURES.csv",
-                "d_items":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/D_ITEMS.csv",
-                "d_labitems":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/D_LABITEMS.csv",
-                "diagnoses_icd":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/DIAGNOSES_ICD.csv",
-                "icustays":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/ICUSTAYS.csv",
-                "inputevents_cv":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/INPUTEVENTS_CV.csv",
-                "labevents":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/LABEVENTS.csv",
-                "microbiologyevents":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/MICROBIOLOGYEVENTS.csv",
-                "outputevents":"<YOUR_DATASET_PATH>/mimic_iii/OUTPUTEVENTS.csv",
-                "patients":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/PATIENTS.csv",
-                "prescriptions":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/PRESCRIPTIONS.csv",
-                "procedures_icd":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/PROCEDURES_ICD.csv",
-                "transfers":"<YOUR_DATASET_PATH>/ehrsql/mimic_iii/TRANSFERS.csv",
+    ehr_dict = {"admissions":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/ADMISSIONS.csv",
+                "chartevents":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/CHARTEVENTS.csv",
+                "cost":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/COST.csv",
+                "d_icd_diagnoses":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/D_ICD_DIAGNOSES.csv",
+                "d_icd_procedures":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/D_ICD_PROCEDURES.csv",
+                "d_items":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/D_ITEMS.csv",
+                "d_labitems":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/D_LABITEMS.csv",
+                "diagnoses_icd":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/DIAGNOSES_ICD.csv",
+                "icustays":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/ICUSTAYS.csv",
+                "inputevents_cv":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/INPUTEVENTS_CV.csv",
+                "labevents":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/LABEVENTS.csv",
+                "microbiologyevents":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/MICROBIOLOGYEVENTS.csv",
+                "outputevents":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/OUTPUTEVENTS.csv",
+                "patients":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/PATIENTS.csv",
+                "prescriptions":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/PRESCRIPTIONS.csv",
+                "procedures_icd":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/PROCEDURES_ICD.csv",
+                "transfers":f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/TRANSFERS.csv",
                 }
     data = pd.read_csv(ehr_dict[target_ehr])
     # data = data.astype(str)
@@ -190,14 +195,14 @@ def get_value(data, argument):
         raise Exception("The column name {} is incorrect. Please check the column name and make necessary changes. The columns in this table include {}.".format(column, column_values))
 
 def sql_interpreter(command):
-    con = sqlite3.connect("<YOUR_DATASET_PATH>/ehrsql/mimic_iii/mimic_iii.db")
+    con = sqlite3.connect(f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/{os.getenv('DATASET')}.db")
     cur = con.cursor()
     results = cur.execute(command).fetchall()
     return results
 
 def date_calculator(argument):
     try:
-        con = sqlite3.connect("<YOUR_DATASET_PATH>/ehrsql/mimic_iii/mimic_iii.db")
+        con = sqlite3.connect(f"{os.getenv('DATASET_PATH')}/{os.getenv('DATASET')}/{os.getenv('DATASET')}.db")
         cur = con.cursor()
         command = "select datetime(current_time, '{}')".format(argument)
         results = cur.execute(command).fetchall()[0][0]
@@ -205,17 +210,17 @@ def date_calculator(argument):
         raise Exception("The date calculator {} is incorrect. Please check the syntax and make necessary changes. For the current date and time, please call Calendar('0 year').".format(argument))
     return results
 
-if __name__ == "__main__":
-    db = table_toolkits()
-    print(db.db_loader("microbiologyevents"))
-    # print(db.data_filter("SPEC_TYPE_DESC=peripheral blood lymphocytes"))
-    print(db.data_filter("HADM_ID=107655"))
-    print(db.data_filter("SPEC_TYPE_DESC=peripheral blood lymphocytes"))
-    print(db.get_value('CHARTTIME'))
-    # results = db.sql_interpreter("select max(t1.c1) from ( select sum(cost.cost) as c1 from cost where cost.hadm_id in ( select diagnoses_icd.hadm_id from diagnoses_icd where diagnoses_icd.icd9_code = ( select d_icd_diagnoses.icd9_code from d_icd_diagnoses where d_icd_diagnoses.short_title = 'comp-oth vasc dev/graft' ) ) and datetime(cost.chargetime) >= datetime(current_time,'-1 year') group by cost.hadm_id ) as t1")
-    # results = [result[0] for result in results]
-    # if len(results) == 1:
-    #     print(results[0])
-    # else:
-    #     print(results)
-    # print(db.date_calculator('-1 year'))
+# if __name__ == "__main__":
+#     db = table_toolkits()
+#     print(db.db_loader("microbiologyevents"))
+#     # print(db.data_filter("SPEC_TYPE_DESC=peripheral blood lymphocytes"))
+#     print(db.data_filter("HADM_ID=107655"))
+#     print(db.data_filter("SPEC_TYPE_DESC=peripheral blood lymphocytes"))
+#     print(db.get_value('CHARTTIME'))
+#     # results = db.sql_interpreter("select max(t1.c1) from ( select sum(cost.cost) as c1 from cost where cost.hadm_id in ( select diagnoses_icd.hadm_id from diagnoses_icd where diagnoses_icd.icd9_code = ( select d_icd_diagnoses.icd9_code from d_icd_diagnoses where d_icd_diagnoses.short_title = 'comp-oth vasc dev/graft' ) ) and datetime(cost.chargetime) >= datetime(current_time,'-1 year') group by cost.hadm_id ) as t1")
+#     # results = [result[0] for result in results]
+#     # if len(results) == 1:
+#     #     print(results[0])
+#     # else:
+#     #     print(results)
+#     # print(db.date_calculator('-1 year'))

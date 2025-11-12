@@ -16,8 +16,8 @@ matplotlib.rcParams['ps.fonttype'] = 42
 sns.set_theme(style="ticks", font="Times New Roman", font_scale=2.1, rc={'grid.linestyle': ':', 'axes.grid': True})
 
 for dataset in ["mimic_iii", "eicu"]:
-    with open(f"<YOUR_DATASET_PATH>", 'r') as f_in, \
-            open(f"<YOUR_SAVED_DATASET_PATH>", "w") as f_out:
+    with open(f"{os.getenv('DATASET_PATH')}/{dataset}/valid.json", 'r') as f_in, \
+            open(f"{os.getenv('DATASET_PATH')}/{dataset}/output.json", "w") as f_out:
         list_num_q_tag_var = []
         list_num_tables = []
         list_num_columns = []

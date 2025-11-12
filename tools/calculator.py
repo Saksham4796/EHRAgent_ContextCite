@@ -6,6 +6,11 @@ import os
 import re
 from operator import pow, truediv, mul, add, sub
 import wolframalpha
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
+
 query = '1+2*3'
 
 def calculator(query: str):
@@ -25,7 +30,7 @@ def calculator(query: str):
 
 def WolframAlphaCalculator(input_query: str):
     try:
-        wolfram_alpha_appid = "<YOUR_WOLFRAMALPHA_APP_ID>"
+        wolfram_alpha_appid = os.getenv("WOLFRAMALPHA_APP_ID")
         wolfram_client = wolframalpha.Client(wolfram_alpha_appid)
         res = wolfram_client.query(input_query)
         assumption = next(res.pods).text
