@@ -49,8 +49,9 @@ def set_seed(seed):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", type=str, default=os.getenv("LLM_MODEL"))
+    parser.add_argument("--cc_llm", type=str, default=os.getenv("CC_LLM_MODEL"))
     parser.add_argument("--num_questions", type=int, default=100)
-    parser.add_argument("--dataset", type=str, default="mimic_iii")
+    parser.add_argument("--dataset", type=str, default=os.getenv("DATASET"))
     parser.add_argument("--data_path", type=str, default=os.getenv("DATASET_PATH"))
     parser.add_argument("--logs_path", type=str, default=os.getenv("LOGS_PATH"))
     parser.add_argument("--seed", type=int, default=42)
@@ -195,7 +196,7 @@ def main():
                 # Lazy load ContextCite wrapper
                 if contextcite_wrapper is None:
                     from contextcite_wrapper import ContextCiteWrapper
-                    contextcite_wrapper = ContextCiteWrapper(model_name=args.llm, device="cpu")
+                    contextcite_wrapper = ContextCiteWrapper(model_name=args.cc_llm, device="cpu")
                     print("ContextCite wrapper initialized")
 
                 # Step 1: Get top-k memory indices using Levenshtein
