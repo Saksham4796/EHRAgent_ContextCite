@@ -196,7 +196,7 @@ def main():
                 # Lazy load ContextCite wrapper
                 if contextcite_wrapper is None:
                     from contextcite_wrapper import ContextCiteWrapper
-                    contextcite_wrapper = ContextCiteWrapper(model_name=args.cc_llm, device="cpu")
+                    contextcite_wrapper = ContextCiteWrapper(model_name=args.cc_llm, device="mps")
                     print("ContextCite wrapper initialized")
 
                 # Step 1: Get top-k memory indices using Levenshtein
@@ -364,7 +364,13 @@ def main():
 
         elif "TERMINATE" in logs_string_joined:
             if '"cell"' in logs_string_joined:
-                last_code_end = logs_string_joined.rfind('"\n}')
+                code_end_token = '"}\n'
+                last_code_end = logs_string_joined.rfind(code_end_token)
+                if last_code_end != -1:
+                    last_code_end += len(code_end_token)
+                else:
+                    # Fallback to the start of the last executed cell
+                    last_code_end = logs_string_joined.rfind('{"cell"')
             else:
                 last_code_end = logs_string_joined.rfind('Solution:')
 
@@ -374,7 +380,7 @@ def main():
             # Clean prediction for solution file
 
             prediction_cleaned = prediction.replace('----------------------------------------------------------', '')
-            prediction_cleaned = prediction_cleaned.replace('"\n}', '')
+            prediction_cleaned = prediction_cleaned.replace('"}\n', '')
             prediction_cleaned = '\n'.join(line.strip() for line in prediction_cleaned.split('\n') if line.strip())
 
             # Write to solution file
